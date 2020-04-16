@@ -23,7 +23,7 @@ using namespace std;
 
 namespace CellState
 {
-    const string free = "#";
+    const string free = "▢";
     const string agent = "🚓";
     const string target = "🚗";
 };

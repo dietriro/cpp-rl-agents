@@ -42,7 +42,7 @@ Agent::Agent(shared_ptr<Environment> env, Position pos, int id, shared_ptr<mutex
     lck.unlock();
 
     unique_lock io_lck(*io_mutex_);
-    cout << "[Agent-" << id_ << "]: Initialized successfully" << endl; 
+    cout << "[Agent " << id_ << "]: Initialized successfully" << endl; 
  }
 
 Agent::~Agent()
@@ -52,7 +52,7 @@ Agent::~Agent()
 void Agent::run()
 {
     unique_lock io_lck(*io_mutex_);
-    cout << "[Agent-" << id_ << "]: Starting to learn now..." << endl; 
+    cout << "[Agent " << id_ << "]: Starting to learn now..." << endl; 
     io_lck.unlock();
 
     pos_ = env_->generatePosition();
@@ -81,11 +81,11 @@ void Agent::run()
             caught_ = true;
             lck.unlock();
             io_lck.lock();
-            cout << "[Agent-" << id_ << "]: Caught the target at position " << pos_ << " after " << num_iterations_ << " iterations" << endl;
+            cout << "[Agent " << id_ << "]: Caught the target at position " << pos_ << " after " << num_iterations_ << " iterations" << endl;
             return;
         }
 
-        this_thread::sleep_for(std::chrono::milliseconds(1));
+        this_thread::sleep_for(std::chrono::milliseconds(1000));
         lck.lock();
     }
 }

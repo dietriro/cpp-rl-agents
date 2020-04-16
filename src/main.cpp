@@ -5,8 +5,8 @@
 int main() {
 
     Manager man;
-    man.createAgents(1, 20, 15);
-    man.runLearning(100, false);
+    man.createAgents(5, 15, 10);
+    man.runLearning(5, true);
 
     std::cout << "Hello World!" << "\n";
     return 0;
