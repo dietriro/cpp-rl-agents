@@ -11,58 +11,55 @@
 #include <sstream>
 
 #include "Agent.h"
+#include "Position.h"
 
 using namespace std;
 
-enum State
+// enum State
+// {
+//     free = 0,
+//     occupied = 1
+// };
+
+namespace CellState
 {
-    free = 0,
-    occupied = 1
+    const string free = "#";
+    const string agent = "🚓";
+    const string target = "🚗";
 };
 
-
-
-class Position
-{
-public:
-    Position(/* args */);
-    Position(int x, int y);
-    ~Position();
-
-    Position operator+(const Position &other) const;
-    Position& operator+=(const Position &other);
-    Position operator-(const Position &other) const;
-    Position& operator-=(const Position &other);
-    bool operator<(const Position &other) const;
-    bool operator>(const Position &other) const;
-    bool operator<=(const Position &other) const;
-    bool operator>=(const Position &other) const;
-
-private:
-    int x_, y_;
-};
-
-const Position ZERO_POS(0,0);
+class Agent;
 
 class Environment
 {
 public:
-    Environment();
+    Environment(shared_ptr<mutex> io_mutex, int size_x, int size_y);
 
     // Implemented methods
     void loadMapFromFile(string file_name);
-    void visualizePath(const vector<vector<int>> &path);
+    void visualize(int rate);
 
-    void createAgents(int number_agents);
+    // void createAgents(int number_agents);
+    void addAgent(weak_ptr<Agent> agent);
 
     bool posInBoundaries(const Position &pos);
+    bool caughtTarget(const Position &pos);
 
-private:
+    Position getTargetPosition();
+    Position getSize();
+
+    void setTarget(weak_ptr<Agent> target);
+
     Position generatePosition();
-
+private:
     Position size_;
     unique_ptr<vector<vector<short>>> map_;
-    vector<unique_ptr<Agent>> agents_;
+    vector<weak_ptr<Agent>> agents_;
+    weak_ptr<Agent> target_;
+    mutex mutex_;
+    shared_ptr<mutex> io_mutex_;
+
+    static bool init_;
 };
 
 #endif
