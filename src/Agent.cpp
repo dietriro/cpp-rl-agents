@@ -20,14 +20,15 @@ T randMaxElement(const vector<T> &values)
 bool Agent::init_ = false;
 bool Agent::caught_ = false;
 mutex Agent::class_mutex_ = mutex();
+vector<int> Agent::num_steps_;
 
 Agent::Agent(shared_ptr<Environment> env, Position pos, int id, shared_ptr<mutex> io_mutex, bool random) : 
     env_{env}, pos_{pos}, id_{id}, random_{random}, io_mutex_{io_mutex}, num_iterations_{0}, last_dist_{0, 0}
 {
-    q_ = make_unique<vector<vector<vector<short>>>>();
+    q_ = make_unique<vector<vector<vector<float>>>>();
     Position map_size = env_->getSize();
-    vector<short> actions(4, 0);
-    vector<vector<short>> row(map_size[1]*2, actions);
+    vector<float> actions(4, 0);
+    vector<vector<float>> row(map_size[1]*2, actions);
     for (int x=0; x<(map_size[0]*2); x++)
     {
         q_->push_back(row);
@@ -57,9 +58,9 @@ void Agent::run()
 
     pos_ = env_->generatePosition();
 
-    unique_lock lck(class_mutex_);
     num_iterations_ = 0;
-    caught_ = 0;
+
+    unique_lock lck(class_mutex_);
 
     while (!caught_)
     {
@@ -72,28 +73,32 @@ void Agent::run()
         // cout << "[Agent " << id_ << "]: Took action " << action_id << ", reached position " << pos_ << endl; 
         // io_lck.unlock();
 
-        if (!random_ && last_dist_ != ZERO_POS)
+        if (!random_)
             updateQ(action_id);
 
         if (env_->caughtTarget(pos_) && !random_)
         {
             lck.lock();
             caught_ = true;
+            num_steps_.push_back(num_iterations_);
             lck.unlock();
             io_lck.lock();
             cout << "[Agent " << id_ << "]: Caught the target at position " << pos_ << " after " << num_iterations_ << " iterations" << endl;
             return;
         }
 
-        this_thread::sleep_for(std::chrono::milliseconds(1000));
+        this_thread::sleep_for(std::chrono::milliseconds(1));
         lck.lock();
     }
+    
+    io_lck.lock();
+    cout << "[Agent " << id_ << "]: Finished learning..." << endl; 
 }
 
 int Agent::takeAction()
 {
     int action_id;
-    vector<short> action_values(4, 0);
+    vector<float> action_values(4, 0);
 
     if (!random_)
     {
@@ -101,7 +106,7 @@ int Agent::takeAction()
     }
 
     updateActionValues(action_values);
-    action_id = randMaxElement<short>(action_values);
+    action_id = randMaxElement<float>(action_values);
     pos_ += Actions[action_id];
 
     return action_id;    
@@ -111,21 +116,24 @@ void Agent::updateQ(int action_id)
 {
     auto dist = env_->getTargetPosition() - pos_ + (env_->getSize() - 1);
 
-    if (env_->caughtTarget(pos_))
+    if (last_dist_ != ZERO_POS)
     {
-        (*q_)[last_dist_[0]][last_dist_[1]][action_id] = REWARD_CATCH;
-    }
-    else
-    {
-        (*q_)[last_dist_[0]][last_dist_[1]][action_id] = 
-        REWARD_TIME + G * (*max_element((*q_)[last_dist_[0]][last_dist_[1]].begin(), 
-                            (*q_)[last_dist_[0]][last_dist_[1]].end()));    
+        if (env_->caughtTarget(pos_))
+        {
+            (*q_)[last_dist_[0]][last_dist_[1]][action_id] = REWARD_CATCH;
+        }
+        else
+        {
+            (*q_)[last_dist_[0]][last_dist_[1]][action_id] = 
+                REWARD_TIME + G * (*max_element((*q_)[last_dist_[0]][last_dist_[1]].begin(), 
+                                    (*q_)[last_dist_[0]][last_dist_[1]].end()));    
+        }
     }
 
     last_dist_ = dist;
 }
 
-void Agent::updateActionValues(vector<short> &action_values)
+void Agent::updateActionValues(vector<float> &action_values)
 {
     if (pos_[1]+1 >= env_->getSize()[1])    // Up
         action_values[0] = -10;
@@ -143,8 +151,39 @@ Position Agent::getPos()
     return pos_;
 }
 
+void Agent::printQ()
+{
+    unique_lock io_lck(*io_mutex_);
+    for (int x=0; x<q_->size(); x++)
+    {
+        for (int y=0; y<q_->at(x).size(); y++)
+        {
+            cout << "(";
+            for (int i=0; i<q_->at(x)[y].size(); i++)
+            {
+                cout << q_->at(x)[y][i];
+                if (i<q_->at(x)[y].size()-1)
+                    cout << ", ";
+            }
+            cout << ")\t";
+        }
+        cout << endl << endl;
+    }
+}
+
 bool Agent::targetCaught()
 {
     unique_lock lck(class_mutex_);
     return caught_;
+}
+
+vector<int>* Agent::getNumSteps()
+{
+    return &num_steps_;
+}
+
+void Agent::reset()
+{
+    unique_lock lck(class_mutex_);
+    caught_ = 0;
 }

@@ -28,6 +28,9 @@ void Manager::runLearning(int number_runs, bool visualization)
     {
         cout << endl << "[Manager]: Starting learning run # " << run+1 << endl;
 
+        // Reset static agent variables
+        Agent::reset();
+
         // Start target and agents
         target_worker_ = move(thread(&Agent::run, target_));
 
@@ -39,7 +42,7 @@ void Manager::runLearning(int number_runs, bool visualization)
                 agent_workers_[i] = move(thread(&Agent::run, agents_[i]));
         }
         if (visualization)
-            visualizer_ = move(thread(&Environment::visualize, env_, 1));
+            visualizer_ = move(thread(&Environment::visualize, env_, 1, true));
 
         cout << "[Manager]: Started all agents, waiting for them to finish now..." << endl;
 
@@ -54,5 +57,18 @@ void Manager::runLearning(int number_runs, bool visualization)
 
         cout << "[Manager]: Finished learning run # " << run+1 << endl;
     }
+    
+    auto num_steps = Agent::getNumSteps();
+
+    cout << endl << "Number of steps per catch: " << endl << "[";
+
+    for (int i=0; i<num_steps->size(); i++)
+    {
+        cout << num_steps->at(i) << ", ";
+    }
+
+    cout << "]" << endl << endl;
+
+    agents_[0]->printQ();
 
 }

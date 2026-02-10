@@ -31,15 +31,18 @@ void Environment::loadMapFromFile(string file_name)
     }
 }
 
-void Environment::visualize(int rate) 
+void Environment::visualize(int rate, bool reset_cursor_pos) 
 {
     vector<Position> agents_pos(agents_.size());
     Position target_pos;
     string cell_value = "🞎";
     unique_lock lck(mutex_, defer_lock);
     unique_lock io_lck(*io_mutex_, defer_lock);
+    bool first_time = true;
 
     bool target_caught = false;
+
+    this_thread::sleep_for(chrono::seconds(rate));
 
     while(!target_caught)
     {
@@ -57,9 +60,16 @@ void Environment::visualize(int rate)
 
         io_lck.lock();
 
+        // Reset cursor position
+        if (!first_time && reset_cursor_pos)
+            for (int y=size_[1]+1; y>=0; y--)
+                std::cout << "\033[F\r";
+
+        // Print map
         for (int y=size_[1]-1; y>=0; y--)
         {
-            cout << "   " << y;
+            // Print y-axis values
+            cout << "\t" << y;
 
             for (int x=0; x<size_[0]; x++)
             {
@@ -75,17 +85,20 @@ void Environment::visualize(int rate)
                 if (target_pos[0] == x && target_pos[1] == y)
                     cell_value = CellState::target;
 
-                cout << "   " << cell_value;
+                cout << "\t" << cell_value;
             }
             cout << endl;
         }
 
-        cout << "    ";
+        // Print x-axis values
+        cout << "\t";
         for (int x=0; x<size_[0]; x++)
-            cout << "   " << x;
-        cout << endl;
+            cout << "\t" << x;
+        cout << endl << endl;
 
         io_lck.unlock();
+
+        first_time = false;
 
         this_thread::sleep_for(chrono::seconds(rate));
     }

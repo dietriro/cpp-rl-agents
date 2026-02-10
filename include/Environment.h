@@ -37,7 +37,7 @@ public:
 
     // Implemented methods
     void loadMapFromFile(string file_name);
-    void visualize(int rate);
+    void visualize(int rate, bool reset_cursor_pos=true);
 
     // void createAgents(int number_agents);
     void addAgent(weak_ptr<Agent> agent);

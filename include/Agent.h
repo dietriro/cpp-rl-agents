@@ -26,9 +26,9 @@ enum ACTION
 };
 
 const Position Actions[] = {{0,1}, {0,-1}, {-1,0}, {1,0}};
-const int REWARD_TIME = -2;
-const int REWARD_CATCH = -2;
-const int G = 0.75;
+const float REWARD_TIME = -2;
+const float REWARD_CATCH = 1000;
+const float G = 0.75;
 
 class Agent
 {
@@ -41,17 +41,20 @@ public:
     int takeAction();
 
     Position getPos();
+    void printQ();
 
     static bool targetCaught();
+    static vector<int>* getNumSteps();
+    static void reset();
 
 private:
-    void updateActionValues(vector<short> &action_values);
+    void updateActionValues(vector<float> &action_values);
     void updateQ(int action_id);
 
     shared_ptr<Environment> env_;
     Position pos_;
     bool random_;
-    unique_ptr<vector<vector<vector<short>>>> q_;
+    unique_ptr<vector<vector<vector<float>>>> q_;
     Position last_dist_;
     int num_iterations_;
     int id_;
@@ -61,6 +64,7 @@ private:
     static mutex class_mutex_;
     static bool init_;
     static bool caught_;
+    static vector<int> num_steps_;
 };
 
 #endif
